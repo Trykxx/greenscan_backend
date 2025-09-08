@@ -24,6 +24,26 @@ Route::post('/check-email', [AuthController::class, 'checkEmail']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/test-cors', function () {
-    return response()->json(['message' => 'CORS fonctionne !']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        $user = $request->user()->load('company');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $user->id,
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
+                'email' => $user->email,
+                'user_type' => $user->user_type,
+                'company' => $user->company ? [
+                    'id' => $user->company->id,
+                    'company_name' => $user->company->company_name,
+                    'siren_number' => $user->company->siren_number,
+                ] : null,
+            ]
+        ]);
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout']);
 });
