@@ -22,7 +22,6 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
             'user_type' => 'required|in:visiteur,exposant',
 
-            // Validation conditionnelle pour les exposants
             'company_name' => 'required_if:user_type,exposant|string|max:255',
             'siren_number' => 'required_if:user_type,exposant|string|size:9|regex:/^[0-9]+$/|unique:companies,siren_number',
         ]);
