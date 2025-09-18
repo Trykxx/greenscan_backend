@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class Exposant extends Model
 {
+    use HasFactory;
+
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -44,8 +45,19 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /**
+     * Relation avec la compagnie
+     */
+    public function company()
+    {
+        return $this->hasOne(Company::class);
+    }
+
+    /**
+     * Retourne le type d'utilisateur (toujours exposant pour cette table)
+     */
     public function getUserType()
     {
-        return 'visiteur';
+        return 'exposant';
     }
 }

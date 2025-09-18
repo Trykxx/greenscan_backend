@@ -10,13 +10,13 @@ class Company extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'exposant_id',
         'company_name',
         'siren_number',
     ];
 
-    public function user()
+    public function exposant()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Exposant::class);
     }
 }

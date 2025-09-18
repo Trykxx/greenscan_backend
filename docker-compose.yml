@@ -6,7 +6,7 @@ services:
     container_name: laravel-backend
     build: .
     volumes:
-      - ./backend-app:/var/www/html
+      - .:/var/www/html
     ports:
       - 9005:80
 
@@ -29,5 +29,4 @@ services:
       - PMA_ARBITRARY=1
 
 volumes:
-  backend-app:
   db-data:

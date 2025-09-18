@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Exposant;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,13 +19,29 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'firstName' => 'required|string|max:255',
             'lastName' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:8',
             'user_type' => 'required|in:visiteur,exposant',
-
             'company_name' => 'required_if:user_type,exposant|string|max:255',
             'siren_number' => 'required_if:user_type,exposant|string|size:9|regex:/^[0-9]+$/|unique:companies,siren_number',
         ]);
+
+        // Validation de l'unicité de l'email selon le type d'utilisateur
+        if ($request->user_type === 'visiteur') {
+            $emailExists = User::where('email', $request->email)->exists() ||
+                Exposant::where('email', $request->email)->exists();
+        } else {
+            $emailExists = Exposant::where('email', $request->email)->exists() ||
+                User::where('email', $request->email)->exists();
+        }
+
+        if ($emailExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => ['email' => ['Cet email est déjà utilisé']]
+            ], 422);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -34,24 +51,30 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Transaction pour créer user + company ensemble
+        // Transaction pour créer utilisateur + company ensemble
         DB::beginTransaction();
 
         try {
-            // 1️⃣ Créer l'utilisateur
-            $user = User::create([
+            $userData = [
                 'firstName' => $request->firstName,
                 'lastName' => $request->lastName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'user_type' => $request->user_type,
-            ]);
+            ];
 
-            // 2️⃣ Si c'est un exposant, créer la company
             $company = null;
-            if ($request->user_type === 'exposant') {
+            $user = null;
+
+            if ($request->user_type === 'visiteur') {
+                // 1️⃣ Créer un visiteur
+                $user = User::create($userData);
+            } else {
+                // 1️⃣ Créer un exposant
+                $user = Exposant::create($userData);
+
+                // 2️⃣ Créer la company
                 $company = Company::create([
-                    'user_id' => $user->id,
+                    'exposant_id' => $user->id,
                     'company_name' => $request->company_name,
                     'siren_number' => $request->siren_number,
                 ]);
@@ -71,10 +94,10 @@ class AuthController extends Controller
                         'firstName' => $user->firstName,
                         'lastName' => $user->lastName,
                         'email' => $user->email,
-                        'user_type' => $user->user_type,
+                        'user_type' => $request->user_type,
                         'company' => $company ? [
                             'id' => $company->id,
-                            'company_name' => $company->name,
+                            'company_name' => $company->company_name,
                             'siren_number' => $company->siren_number,
                         ] : null,
                     ],
@@ -96,7 +119,11 @@ class AuthController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $exists = User::where('email', $request->email)->exists();
+        // Vérifier dans les deux tables
+        $existsInUsers = User::where('email', $request->email)->exists();
+        $existsInExposants = Exposant::where('email', $request->email)->exists();
+
+        $exists = $existsInUsers || $existsInExposants;
 
         return response()->json([
             'exists' => $exists,
@@ -119,10 +146,26 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Récupérer l'utilisateur avec sa company si elle existe
-        $user = User::with('company')->where('email', $request->email)->first();
+        $user = null;
+        $userType = null;
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Chercher dans la table users (visiteurs)
+        $visiteur = User::where('email', $request->email)->first();
+        if ($visiteur && Hash::check($request->password, $visiteur->password)) {
+            $user = $visiteur;
+            $userType = 'visiteur';
+        }
+
+        // Si pas trouvé, chercher dans la table exposants
+        if (!$user) {
+            $exposant = Exposant::with('company')->where('email', $request->email)->first();
+            if ($exposant && Hash::check($request->password, $exposant->password)) {
+                $user = $exposant;
+                $userType = 'exposant';
+            }
+        }
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email ou mot de passe incorrect'
@@ -140,10 +183,10 @@ class AuthController extends Controller
                     'firstName' => $user->firstName,
                     'lastName' => $user->lastName,
                     'email' => $user->email,
-                    'user_type' => $user->user_type,
-                    'company' => $user->company ? [
+                    'user_type' => $userType,
+                    'company' => ($userType === 'exposant' && $user->company) ? [
                         'id' => $user->company->id,
-                        'company_name' => $user->company->name,
+                        'company_name' => $user->company->company_name,
                         'siren_number' => $user->company->siren_number,
                     ] : null,
                 ],

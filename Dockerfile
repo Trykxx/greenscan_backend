@@ -1,4 +1,4 @@
-FROM php:8.1.0-apache
+FROM php:8.2-apache
 
 WORKDIR /var/www/html
 
@@ -10,6 +10,9 @@ RUN apt-get update -y && apt-get install -y \
     unzip zip \
     zlib1g-dev libpng-dev libjpeg-dev libfreetype6-dev \
     libjpeg62-turbo-dev
+
+# Copier la configuration Apache
+COPY apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
