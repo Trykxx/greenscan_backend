@@ -1,0 +1,33 @@
+version: '3'
+services:
+  backend:
+    depends_on:
+      - mysql
+    container_name: laravel-backend
+    build: .
+    volumes:
+      - ./backend-app:/var/www/html
+    ports:
+      - 9005:80
+
+  mysql:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=greenscan
+    ports:
+      - 3005:3306
+    volumes:
+      - ./greenscan.sql:/docker-entrypoint-initdb.d/schema.sql
+      - db-data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - 9015:80
+    environment:
+      - PMA_ARBITRARY=1
+
+volumes:
+  backend-app:
+  db-data:
