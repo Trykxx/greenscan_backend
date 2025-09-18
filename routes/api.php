@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,4 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [ProfileController::class, 'show']);
     Route::put('/user/profile', [ProfileController::class, 'update']);
+
+    Route::post('/documents', [DocumentController::class, 'store']);
+    Route::get('/users/{userId}/documents', [DocumentController::class, 'getUserDocuments']);
 });
