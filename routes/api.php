@@ -22,11 +22,19 @@ Route::post('/login', [AuthController::class, 'login']);
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Route pour récupérer les infos de l'utilisateur connecté
+    // Routes de profil
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Documents
+    Route::post('/documents', [DocumentController::class, 'store']);
+    Route::get('/users/{userId}/documents', [DocumentController::class, 'getUserDocuments']);
+
     Route::get('/user', function (Request $request) {
         $user = $request->user();
 
-        // Déterminer le type d'utilisateur selon la classe du modèle
         if ($user instanceof User) {
             $userType = 'visiteur';
             $company = null;
@@ -52,14 +60,4 @@ Route::middleware('auth:sanctum')->group(function () {
             ]
         ]);
     });
-
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-    // Routes de profil
-    Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-
-    // Routes pour les documents
-    Route::post('/documents', [DocumentController::class, 'store']);
-    Route::get('/users/{userId}/documents', [DocumentController::class, 'getUserDocuments']);
 });

@@ -1,14 +1,14 @@
-version: '3'
-services:
+version: '3' # Version de Docker
+services: # Déclaration des services (conteneurs) a lancer
   backend:
-    depends_on:
+    depends_on: # Attend que le service soit démarré avant de lancer le backend
       - mysql
     container_name: laravel-backend
-    build: .
+    build: . # Construit l'image a partir du Dockerfile dans le répertoire courant
     volumes:
-      - .:/var/www/html
+      - .:/var/www/html # Monte le répertoire courant (.) dans /var/www/html du conteneur (pour le développement en temps réel)
     ports:
-      - 9005:80
+      - 9005:80 # Redirige le port 80 du conteneur vers le port 9005 de la machine hôte
 
   mysql:
     image: mysql:latest
@@ -17,6 +17,9 @@ services:
       - MYSQL_DATABASE=greenscan
     ports:
       - 3005:3306
+    # Monte deux volumes :
+    # 1. Un fichier SQL pour initialiser la base de données au premier démarrage
+    # 2. Un volume nommé "db-data" pour persister les données MySQL (même après arrêt du conteneur)
     volumes:
       - ./greenscan.sql:/docker-entrypoint-initdb.d/schema.sql
       - db-data:/var/lib/mysql
@@ -26,7 +29,8 @@ services:
     ports:
       - 9015:80
     environment:
-      - PMA_ARBITRARY=1
+      - PMA_ARBITRARY=1 # Permet à phpMyAdmin de se connecter à n'importe quel serveur MySQL (utile pour le développement)
 
+# Déclaration des volumes nommés (pour la persistance des données)
 volumes:
   db-data:
